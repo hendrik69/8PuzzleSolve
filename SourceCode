@@ -1,0 +1,330 @@
+package Tubes;
+
+import java.util.LinkedList;
+import java.util.Random;
+
+class Puzzle {
+	int[][] data = new int[3][3];
+	String pergerakan;
+	Puzzle parent;
+
+	public Puzzle(){}
+
+	public Puzzle(String data) {    //pembuatan puzzle
+		int k = 0;
+		for (int i = 0; i < this.data.length; i++) {
+			for (int j = 0; j < this.data[i].length; j++) {
+				this.data[i][j] = Integer.parseInt(data.charAt(k) + "");
+				k++;
+			}
+		}
+	}
+        //untuk memprint matriks yang telah dibuat.
+	public void printData() {
+		for (int i = 0; i < this.data.length; i++) {
+			for (int j = 0; j < this.data[i].length; j++) {
+				if (data[i][j] == 0) {
+					System.out.print("  ");
+				} else {
+					System.out.print(data[i][j] + " ");
+				}
+			}
+			System.out.println();
+		}
+		System.out.println();
+	}
+
+	public String jadikanString(){
+		String data = "";
+		for (int i = 0; i < this.data.length; i++) {
+			for (int j = 0; j < this.data.length; j++) {
+				data = data + this.data[i][j];
+			}
+		}
+		return data;
+	}
+
+}
+
+class PuzzleSolver {
+
+	private LinkedList<Puzzle> listPuzzle;
+	private LinkedList<Puzzle> listLangkah;
+
+	private Puzzle soal;
+	private Puzzle tujuan;
+	private Puzzle currentPuzzle;
+
+	private int[] posisiNol = new int[2];
+	private boolean solved;
+
+	public PuzzleSolver(String soal) {
+		this.listPuzzle = new LinkedList<Puzzle>();
+		this.soal = insertNodes(soal);          //soal dengan hasil dari generate
+		this.tujuan = insertNodes("123456780"); //puzzle dengan hasil angka 0-8
+		this.addKeList(this.soal);
+		this.setSolved(this.soal);
+	}
+
+	public void doSolve() { // untuk penyelesaian
+		while ((!this.listPuzzle.isEmpty())) {
+			this.currentPuzzle = this.listPuzzle.removeFirst();
+
+			this.setSolved(this.currentPuzzle);
+
+			if (this.solved) {
+                            //untuk mengoutput data yang telah selesai secaara berurutan dari akhir ke pertama
+				listLangkah = new LinkedList<Puzzle>();
+				while (this.currentPuzzle.parent != null) {
+					listLangkah.addFirst(currentPuzzle);
+					this.currentPuzzle = this.currentPuzzle.parent;
+				}
+				for (int i = 1; !listLangkah.isEmpty(); i++) {
+                                    //untuk mengoutput data yang telah selesai secara berurutan dari pertama ke belakang
+					this.currentPuzzle = listLangkah.removeFirst();
+					System.out.println("Langkah " + i + " : "
+							+ currentPuzzle.pergerakan);
+					this.currentPuzzle.printData();
+				}
+				break;
+			}
+
+			this.posisiNol = cariNol(this.currentPuzzle);
+			if (this.posisiNol[0] == -1 || this.posisiNol[0] == -1) {
+				break;
+			}
+
+			// ketika nol nggak di paling atas, nol ditukar sama atasnya
+			if (this.posisiNol[0] != 0) {
+				this.geserKeBawah();
+			}
+
+			// ketika nol nggak di paling kanan, nol ditukar sama kanannya
+			if (this.posisiNol[1] != this.currentPuzzle.data[0].length - 1) {
+				this.geserKeKiri();
+			}
+
+			// ketika nol nggak di paling bawah, nol ditukar sama bawahnya
+			if (this.posisiNol[0] != this.currentPuzzle.data.length - 1) {
+				this.geserKeAtas();
+			}
+
+			// ketika nol nggak di paling kiri, nol ditukar sama kirinya
+			if (this.posisiNol[1] != 0) {
+				this.geserKeKanan();
+			}
+		}
+		if (!solved)
+			System.out.println("ouc");
+	}
+
+	private void addKeList(Puzzle newPuzzle) { //berfungsi pada setiap perpindahan akan di masukkan ke linkedlist
+		boolean ada = false;
+		for (int i = 0; i < listPuzzle.size(); i++) {
+			if (newPuzzle.jadikanString().equals(
+					listPuzzle.get(i).jadikanString())) {
+				ada = true;
+				break;
+			}
+		}
+		if (!ada)
+			this.listPuzzle.add(newPuzzle);
+	}
+
+	private int[] cariNol(Puzzle puzzle) { //untuk mencari keberadaan angka 0 dan mengkordinatkannya
+		int i = 0, j = 0;
+		for (i = 0; i < puzzle.data.length; i++) {
+			for (j = 0; j < puzzle.data[i].length; j++) {
+				if (puzzle.data[i][j] == 0) {
+					return new int[] { i, j };
+				}
+			}
+		}
+		return new int[] { -1, -1 }; //apabila nilai 0 tidak ada maka output akan menjadi -1,-1
+	}
+
+	private Puzzle copyPuzzleData(Puzzle sourcePuzzle) { //mengopy puzzle setiap perpindahan
+		Puzzle newPuzzle = new Puzzle();
+		for (int i = 0; i < sourcePuzzle.data.length; i++) {
+			for (int j = 0; j < sourcePuzzle.data[i].length; j++) {
+				newPuzzle.data[i][j] = sourcePuzzle.data[i][j];
+			}
+		}
+		return newPuzzle;
+	}
+
+	private Puzzle insertNodes(String data) {
+		return new Puzzle(data);
+	}
+
+	private void geserKeAtas() {
+		Puzzle nextPuzzle = this.copyPuzzleData(this.currentPuzzle);
+		nextPuzzle.data[this.posisiNol[0]][this.posisiNol[1]] = nextPuzzle.data[this.posisiNol[0] + 1][this.posisiNol[1]];
+		nextPuzzle.data[this.posisiNol[0] + 1][this.posisiNol[1]] = 0;
+		nextPuzzle.parent = this.currentPuzzle;
+		nextPuzzle.pergerakan = "atas";
+		this.addKeList(nextPuzzle);
+	}
+
+	private void geserKeBawah() {
+		Puzzle nextPuzzle = this.copyPuzzleData(this.currentPuzzle);
+		nextPuzzle.data[this.posisiNol[0]][this.posisiNol[1]] = nextPuzzle.data[this.posisiNol[0] - 1][this.posisiNol[1]];
+		nextPuzzle.data[this.posisiNol[0] - 1][this.posisiNol[1]] = 0;
+		nextPuzzle.parent = this.currentPuzzle;
+		nextPuzzle.pergerakan = "bawah";
+		this.addKeList(nextPuzzle);
+	}
+
+	private void geserKeKanan() {
+		Puzzle nextPuzzle = this.copyPuzzleData(this.currentPuzzle);
+		nextPuzzle.data[this.posisiNol[0]][this.posisiNol[1]] = nextPuzzle.data[this.posisiNol[0]][this.posisiNol[1] - 1];
+		nextPuzzle.data[this.posisiNol[0]][this.posisiNol[1] - 1] = 0;
+		nextPuzzle.parent = this.currentPuzzle;
+		nextPuzzle.pergerakan = "kanan";
+		this.addKeList(nextPuzzle);
+	}
+
+	private void geserKeKiri() {
+		Puzzle nextPuzzle = this.copyPuzzleData(this.currentPuzzle);
+		nextPuzzle.data[posisiNol[0]][posisiNol[1]] = nextPuzzle.data[posisiNol[0]][posisiNol[1] + 1];
+		nextPuzzle.data[posisiNol[0]][posisiNol[1] + 1] = 0;
+		nextPuzzle.parent = this.currentPuzzle;
+		nextPuzzle.pergerakan = "kiri";
+		this.addKeList(nextPuzzle);
+	}
+
+	private void setSolved(Puzzle puzzle) { // untuk membuat agar puzzle menjadi matriks 3x3
+		solved = true;
+		for (int i = 0; i < puzzle.data.length; i++) {
+			for (int j = 0; j < puzzle.data[i].length; j++) {
+				if (puzzle.data[i][j] != this.tujuan.data[i][j]) {
+					solved = false;
+					break;
+				}
+			}
+			if (!solved)
+				break;
+		}
+	}
+}
+class PuzzleGenerator {
+
+	private static LinkedList<Puzzle> listPuzzle = new LinkedList<Puzzle>();
+
+	private static Puzzle master = new Puzzle("123456780");
+	private static Puzzle currentPuzzle;
+
+	private static int[] posisiNol = new int[2];
+
+	public static String doGenerate() { //untuk membuat soal
+		Random random = new Random();
+		int rand = random.nextInt(250); //250=jumlah maksimal pengacakan puzzle
+		addKeList(master);
+		for (int i = 0; i < rand && i < listPuzzle.size(); i++) {
+			currentPuzzle = listPuzzle.get(i);
+			posisiNol = cariNol(currentPuzzle);
+
+			if (posisiNol[0] == -1 || posisiNol[0] == -1) {
+				break;
+			}
+
+			// ketika nol nggak di paling atas, nol ditukar sama atasnya
+			if (posisiNol[0] != 0) {
+				geserKeBawah();
+			}
+
+			// ketika nol nggak di paling kanan, nol ditukar sama kanannya
+			if (posisiNol[1] != currentPuzzle.data[0].length - 1) {
+				geserKeKiri();
+			}
+
+			// ketika nol nggak di paling bawah, nol ditukar sama bawahnya
+			if (posisiNol[0] != currentPuzzle.data.length - 1) {
+				geserKeAtas();
+			}
+
+			// ketika nol nggak di paling kiri, nol ditukar sama kirinya
+			if (posisiNol[1] != 0) {
+				geserKeKanan();
+			}
+		}
+		System.out.println("Soal : ");
+		currentPuzzle.printData();
+		return currentPuzzle.jadikanString();
+	}
+
+	private static void addKeList(Puzzle newPuzzle) { //masukkan hasil generate tadi ke linkedlist
+		boolean ada = false;
+		for (int i = 0; i < listPuzzle.size(); i++) {
+			if (newPuzzle.jadikanString().equals(
+					listPuzzle.get(i).jadikanString())) {
+				ada = true;
+				break;
+			}
+		}
+		if (!ada)
+			listPuzzle.add(newPuzzle);
+	}
+
+	private static int[] cariNol(Puzzle puzzle) {
+		int i = 0, j = 0;
+		for (i = 0; i < puzzle.data.length; i++) {
+			for (j = 0; j < puzzle.data[i].length; j++) {
+				if (puzzle.data[i][j] == 0) {
+					return new int[] { i, j };
+				}
+			}
+		}
+		return new int[] { -1, -1 };
+	}
+
+	private static Puzzle copyPuzzleData(Puzzle sourcePuzzle) {
+		Puzzle newPuzzle = new Puzzle();
+		for (int i = 0; i < sourcePuzzle.data.length; i++) {
+			for (int j = 0; j < sourcePuzzle.data[i].length; j++) {
+				newPuzzle.data[i][j] = sourcePuzzle.data[i][j];
+			}
+		}
+		return newPuzzle;
+	}
+
+	private static void geserKeAtas() {
+		Puzzle nextPuzzle = copyPuzzleData(currentPuzzle);
+		nextPuzzle.data[posisiNol[0]][posisiNol[1]] = nextPuzzle.data[posisiNol[0] + 1][posisiNol[1]];
+		nextPuzzle.data[posisiNol[0] + 1][posisiNol[1]] = 0;
+		addKeList(nextPuzzle);
+	}
+
+	private static void geserKeBawah() {
+		Puzzle nextPuzzle = copyPuzzleData(currentPuzzle);
+		nextPuzzle.data[posisiNol[0]][posisiNol[1]] = nextPuzzle.data[posisiNol[0] - 1][posisiNol[1]];
+		nextPuzzle.data[posisiNol[0] - 1][posisiNol[1]] = 0;
+		addKeList(nextPuzzle);
+	}
+
+	private static void geserKeKanan() {
+		Puzzle nextPuzzle = copyPuzzleData(currentPuzzle);
+		nextPuzzle.data[posisiNol[0]][posisiNol[1]] = nextPuzzle.data[posisiNol[0]][posisiNol[1] - 1];
+		nextPuzzle.data[posisiNol[0]][posisiNol[1] - 1] = 0;
+		addKeList(nextPuzzle);
+	}
+
+	private static void geserKeKiri() {
+		Puzzle nextPuzzle = copyPuzzleData(currentPuzzle);
+		nextPuzzle.data[posisiNol[0]][posisiNol[1]] = nextPuzzle.data[posisiNol[0]][posisiNol[1] + 1];
+		nextPuzzle.data[posisiNol[0]][posisiNol[1] + 1] = 0;
+		addKeList(nextPuzzle);
+	}
+
+	public static void main(String args []){
+//		Scanner scanner = new Scanner(System.in);
+		String puzzle = PuzzleGenerator.doGenerate();
+		PuzzleSolver puzzleSolver = new PuzzleSolver(puzzle);
+//		scanner.nextLine();
+		puzzleSolver.doSolve();
+	}
+
+}
+
+
+
